@@ -1,0 +1,6 @@
+{
+  "name": "Outreach Hub",
+  "description": "Personalized outreach management dashboard for student organizations to organize contacts, draft tailored emails, track follow-ups, and coordinate communications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

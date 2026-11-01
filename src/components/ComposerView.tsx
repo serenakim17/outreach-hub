@@ -12,10 +12,6 @@ import {
   BookOpen,
   Info,
   Clock,
-  AlertTriangle,
-  RotateCcw,
-  Tag,
-  ExternalLink,
 } from 'lucide-react';
 
 export const ComposerView: React.FC = () => {
@@ -28,7 +24,7 @@ export const ComposerView: React.FC = () => {
     addToast,
   } = useOutreach();
 
-  // Active selected contact
+  // Active selected contact ID
   const [selectedId, setSelectedId] = useState<string>(
     selectedContactIdForComposer || contacts[0]?.id || ''
   );
@@ -37,26 +33,29 @@ export const ComposerView: React.FC = () => {
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [researchNotes, setResearchNotes] = useState(''); // Dedicated local state for smooth typing/deleting
   const [isCopied, setIsCopied] = useState(false);
   const [showGeminiModal, setShowGeminiModal] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync draft from active contact
+  // Sync draft and research notes whenever the selected contact changes
   useEffect(() => {
     if (activeContact) {
       setSelectedId(activeContact.id);
       setSubject(activeContact.draftSubject || '');
       setBody(activeContact.draftBody || '');
+      setResearchNotes(activeContact.researchNotes || '');
     }
   }, [activeContact?.id]);
 
-  // Handle manual editing of research notes for the active contact
-  const handleNotesChange = (newNotes: string) => {
+  // Handle local text changes and update global contact state
+  const handleNotesChange = (text: string) => {
+    setResearchNotes(text);
     if (!activeContact) return;
     setContacts((prevContacts: any[]) =>
       prevContacts.map((c) =>
-        c.id === activeContact.id ? { ...c, researchNotes: newNotes } : c
+        c.id === activeContact.id ? { ...c, researchNotes: text } : c
       )
     );
   };
@@ -70,7 +69,7 @@ export const ComposerView: React.FC = () => {
       if (variableKey === '{{Organization}}') valueToInsert = activeContact.organization;
       if (variableKey === '{{Role}}') valueToInsert = activeContact.role || 'Partner';
       if (variableKey === '{{My Organization}}') valueToInsert = settings.organizationName;
-      if (variableKey === '{{Research Notes}}') valueToInsert = activeContact.researchNotes || '';
+      if (variableKey === '{{Research Notes}}') valueToInsert = researchNotes;
     }
 
     if (!textareaRef.current) {
@@ -106,7 +105,6 @@ export const ComposerView: React.FC = () => {
     setTimeout(() => setIsCopied(false), 2500);
   };
 
-  // Sample template fill for preview demonstration
   const handleLoadSampleDraft = () => {
     if (!activeContact) return;
     const generatedSubject = `Exploring STEM Collaboration with ${activeContact.organization} · ${settings.organizationName}`;
@@ -115,7 +113,7 @@ export const ComposerView: React.FC = () => {
 I hope this message finds you well.
 
 My name is ${settings.volunteerName || 'Alex Rivera'}, representing ${settings.organizationName}. I have been following ${activeContact.organization}'s remarkable work${
-      activeContact.researchNotes ? `—specifically: "${activeContact.researchNotes.slice(0, 110)}..."` : ''
+      researchNotes ? `—specifically: "${researchNotes.slice(0, 110)}..."` : ''
     } and was inspired to reach out directly.
 
 Our student alliance coordinates hands-on outreach, career panels, and technical symposiums for over 200 aspiring collegiate engineers and local high schoolers. Given your background in ${activeContact.role || 'your field'}, we would be deeply honored to collaborate with you this academic term.
@@ -156,9 +154,9 @@ Thank you for your time and leadership in STEM.`;
         </span>
       </div>
 
-      {/* Main Split Layout: Context Dossier (Left) + Composer Editor (Right) */}
+      {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left Dossier Panel (4 cols) */}
+        {/* Left Panel */}
         <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -177,7 +175,7 @@ Thank you for your time and leadership in STEM.`;
             </select>
           </div>
 
-          {/* Contact Details Card */}
+          {/* Contact Card */}
           <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -201,7 +199,7 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Section — Editable for Manual Copy/Pasting */}
+          {/* Research Notes Field */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
@@ -209,7 +207,7 @@ Thank you for your time and leadership in STEM.`;
             </div>
             <textarea
               rows={4}
-              value={activeContact.researchNotes ?? ''}
+              value={researchNotes}
               onChange={(e) => handleNotesChange(e.target.value)}
               placeholder="Paste research notes from Google Sheets here..."
               className="w-full p-2.5 bg-white rounded-lg border border-slate-300 text-xs text-slate-700 leading-relaxed font-sans focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
@@ -241,7 +239,6 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Draft Metadata */}
           {activeContact.draftUpdatedAt && (
             <div className="text-[11px] text-slate-400 font-mono tabular-nums flex items-center gap-1.5 pt-2">
               <Clock className="w-3 h-3" />
@@ -250,9 +247,8 @@ Thank you for your time and leadership in STEM.`;
           )}
         </div>
 
-        {/* Right Editor Panel (8 cols) */}
+        {/* Right Editor Panel */}
         <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col space-y-4">
-          {/* Header Bar */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3 flex-wrap">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Email Draft Workspace</h3>
@@ -273,7 +269,6 @@ Thank you for your time and leadership in STEM.`;
             </button>
           </div>
 
-          {/* Subject Field */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Subject Line
@@ -287,7 +282,6 @@ Thank you for your time and leadership in STEM.`;
             />
           </div>
 
-          {/* Body Field */}
           <div className="flex-1 flex flex-col">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Email Body
@@ -302,7 +296,6 @@ Thank you for your time and leadership in STEM.`;
             />
           </div>
 
-          {/* Signature Preview */}
           <div className="p-3 bg-slate-50/70 border border-slate-200 rounded-lg text-xs text-slate-600">
             <span className="text-[11px] font-semibold text-slate-400 block mb-1 uppercase tracking-wider">
               Automatic Organization Signature
@@ -312,7 +305,6 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Bottom Action Footer */}
           <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <button
               onClick={handleCopy}
@@ -344,7 +336,6 @@ Thank you for your time and leadership in STEM.`;
         </div>
       </div>
 
-      {/* Modal Preview */}
       {showGeminiModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden p-6 space-y-4">

@@ -21,7 +21,7 @@ import {
 export const ComposerView: React.FC = () => {
   const {
     contacts,
-    setContacts, // Added setContacts to update research notes state
+    setContacts,
     selectedContactIdForComposer,
     saveDraft,
     settings,
@@ -51,7 +51,7 @@ export const ComposerView: React.FC = () => {
     }
   }, [activeContact?.id]);
 
-  // Handle editing research notes inline for the active contact
+  // Handle manual editing of research notes for the active contact
   const handleNotesChange = (newNotes: string) => {
     if (!activeContact) return;
     setContacts((prevContacts: any[]) =>
@@ -106,8 +106,8 @@ export const ComposerView: React.FC = () => {
     setTimeout(() => setIsCopied(false), 2500);
   };
 
-  // Sample AI generation simulation for preview demonstration
-  const handleLoadSampleAiDraft = () => {
+  // Sample template fill for preview demonstration
+  const handleLoadSampleDraft = () => {
     if (!activeContact) return;
     const generatedSubject = `Exploring STEM Collaboration with ${activeContact.organization} · ${settings.organizationName}`;
     const generatedBody = `Dear ${activeContact.firstName ? activeContact.firstName : 'Partner'},
@@ -201,7 +201,7 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Callout / Editable Textarea for Google Sheet Pasting */}
+          {/* Research Notes Section — Editable for Manual Copy/Pasting */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
@@ -209,10 +209,10 @@ Thank you for your time and leadership in STEM.`;
             </div>
             <textarea
               rows={4}
-              value={activeContact.researchNotes || ''}
+              value={activeContact.researchNotes ?? ''}
               onChange={(e) => handleNotesChange(e.target.value)}
               placeholder="Paste research notes from Google Sheets here..."
-              className="w-full p-2.5 bg-indigo-50/40 rounded-lg border border-indigo-100 text-xs text-slate-700 leading-relaxed font-sans focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full p-2.5 bg-white rounded-lg border border-slate-300 text-xs text-slate-700 leading-relaxed font-sans focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
@@ -261,7 +261,6 @@ Thank you for your time and leadership in STEM.`;
               </p>
             </div>
 
-            {/* AI Generator Button - Marked as Integration Pending */}
             <button
               onClick={() => setShowGeminiModal(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
@@ -324,7 +323,6 @@ Thank you for your time and leadership in STEM.`;
             </button>
 
             <div className="flex items-center gap-2 justify-end">
-              {/* Save Draft Button - Works Locally */}
               <button
                 onClick={handleSaveDraft}
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs"
@@ -333,7 +331,6 @@ Thank you for your time and leadership in STEM.`;
                 <span>Save Draft (Local)</span>
               </button>
 
-              {/* Approve & Send Button - Clearly labeled 'Connect Gmail to enable' */}
               <button
                 disabled
                 title="Direct sending requires Google Workspace OAuth connection to be completed by the backend team."
@@ -347,7 +344,7 @@ Thank you for your time and leadership in STEM.`;
         </div>
       </div>
 
-      {/* Gemini AI Integration Pending Modal */}
+      {/* Modal Preview */}
       {showGeminiModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden p-6 space-y-4">
@@ -358,10 +355,10 @@ Thank you for your time and leadership in STEM.`;
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
-                    Gemini AI Outreach Assistant
+                    Template Assistant
                   </h3>
-                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-sm">
-                    Backend Integration Pending
+                  <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-sm">
+                    Manual Mode Enabled
                   </span>
                 </div>
               </div>
@@ -369,19 +366,7 @@ Thank you for your time and leadership in STEM.`;
 
             <div className="text-xs text-slate-600 space-y-2.5 leading-relaxed bg-slate-50 p-3.5 rounded-lg border border-slate-200">
               <p>
-                <strong>Architecture Notice:</strong> The server-side Gemini integration route (<code className="bg-slate-200 px-1 py-0.5 rounded font-mono">/api/gemini/generate-outreach</code>) will use the modern Google Gen AI SDK (<code className="bg-slate-200 px-1 py-0.5 rounded font-mono">@google/genai</code>) to synthesize outreach text using:
-              </p>
-              <ul className="list-disc pl-4 space-y-1 text-slate-700">
-                <li>Recipient background: <em>{activeContact.firstName} {activeContact.lastName} ({activeContact.role} at {activeContact.organization})</em></li>
-                <li>Research Dossier notes: <em>{activeContact.researchNotes ? activeContact.researchNotes.slice(0, 90) + '...' : 'No notes'}</em></li>
-                <li>Student organization context: <em>{settings.organizationName}</em></li>
-              </ul>
-            </div>
-
-            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg text-xs text-indigo-900">
-              <p className="font-semibold mb-1">Preview Demonstrative Draft:</p>
-              <p className="text-[11px] text-indigo-800">
-                You can insert a sample synthesized draft into the editor right now to experience how the finished workflow will function once API keys are connected.
+                You are currently using manual research note entry for: <strong>{activeContact.firstName} {activeContact.lastName}</strong> at <em>{activeContact.organization}</em>.
               </p>
             </div>
 
@@ -393,10 +378,10 @@ Thank you for your time and leadership in STEM.`;
                 Close
               </button>
               <button
-                onClick={handleLoadSampleAiDraft}
+                onClick={handleLoadSampleDraft}
                 className="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs"
               >
-                Load Demonstrative Draft
+                Load Sample Draft
               </button>
             </div>
           </div>

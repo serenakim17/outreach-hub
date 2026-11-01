@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Outreach Hub Companion",
+  "version": "1.0",
+  "description": "Create and send outreach emails directly on any website.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Open Outreach Hub"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ]
+}

@@ -394,6 +394,10 @@ export const ContactsView: React.FC = () => {
           setContactToEdit(c);
           setIsAddModalOpen(true);
         }}
+        onCompose={(c) => {
+          setSelectedProfileContact(null);
+          openComposerForContact(c.id);
+        }}
       />
     </div>
   );

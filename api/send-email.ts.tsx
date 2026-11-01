@@ -1,4 +1,14 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+export interface ApiRequest {
+  method?: string;
+  body: any;
+}
+
+export interface ApiResponse {
+  status: (code: number) => ApiResponse;
+  json: (data: any) => any;
+  setHeader: (name: string, value: string) => void;
+  end: () => void;
+}
 
 interface SendEmailBody {
   toEmail: string;
@@ -6,7 +16,7 @@ interface SendEmailBody {
   body: string;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

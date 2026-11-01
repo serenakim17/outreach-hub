@@ -21,6 +21,7 @@ import {
 export const ComposerView: React.FC = () => {
   const {
     contacts,
+    setContacts, // Added setContacts to update research notes state
     selectedContactIdForComposer,
     saveDraft,
     settings,
@@ -50,6 +51,16 @@ export const ComposerView: React.FC = () => {
     }
   }, [activeContact?.id]);
 
+  // Handle editing research notes inline for the active contact
+  const handleNotesChange = (newNotes: string) => {
+    if (!activeContact) return;
+    setContacts((prevContacts: any[]) =>
+      prevContacts.map((c) =>
+        c.id === activeContact.id ? { ...c, researchNotes: newNotes } : c
+      )
+    );
+  };
+
   // Insert variable into body at cursor
   const insertVariable = (variableKey: string) => {
     let valueToInsert = variableKey;
@@ -59,6 +70,7 @@ export const ComposerView: React.FC = () => {
       if (variableKey === '{{Organization}}') valueToInsert = activeContact.organization;
       if (variableKey === '{{Role}}') valueToInsert = activeContact.role || 'Partner';
       if (variableKey === '{{My Organization}}') valueToInsert = settings.organizationName;
+      if (variableKey === '{{Research Notes}}') valueToInsert = activeContact.researchNotes || '';
     }
 
     if (!textareaRef.current) {
@@ -189,21 +201,19 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Callout */}
+          {/* Research Notes Callout / Editable Textarea for Google Sheet Pasting */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
               <span>Research Notes for Personalization</span>
             </div>
-            <div className="p-3 bg-indigo-50/40 rounded-lg border border-indigo-100 text-xs text-slate-700 leading-relaxed font-sans max-h-48 overflow-y-auto whitespace-pre-wrap">
-              {activeContact.researchNotes ? (
-                activeContact.researchNotes
-              ) : (
-                <span className="text-slate-400 italic">
-                  No research notes recorded. Go to Contacts &gt; Edit to add personalized details.
-                </span>
-              )}
-            </div>
+            <textarea
+              rows={4}
+              value={activeContact.researchNotes || ''}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              placeholder="Paste research notes from Google Sheets here..."
+              className="w-full p-2.5 bg-indigo-50/40 rounded-lg border border-indigo-100 text-xs text-slate-700 leading-relaxed font-sans focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+            />
           </div>
 
           {/* Quick Variable Chips */}
@@ -217,6 +227,7 @@ Thank you for your time and leadership in STEM.`;
                 '{{Organization}}',
                 '{{Role}}',
                 '{{My Organization}}',
+                '{{Research Notes}}',
               ].map((token) => (
                 <button
                   key={token}

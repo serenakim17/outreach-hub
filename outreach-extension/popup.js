@@ -3,26 +3,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const notesInput = document.getElementById('notes');
   const subjectInput = document.getElementById('subject');
   const bodyInput = document.getElementById('body');
+  const generateBtn = document.getElementById('generateBtn');
+  const insertNotesChip = document.getElementById('insertNotesChip');
   const copyBtn = document.getElementById('copyBtn');
   const sendBtn = document.getElementById('sendBtn');
   const statusDiv = document.getElementById('status');
 
-  // Insert research notes into body at cursor position
-  document.querySelectorAll('.chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      const notesContent = notesInput.value || '';
-      
-      const start = bodyInput.selectionStart || 0;
-      const end = bodyInput.selectionEnd || 0;
-      const currentText = bodyInput.value;
+  // Auto-generate subject and body based on research notes
+  generateBtn.addEventListener('click', () => {
+    const notes = notesInput.value.trim();
+    if (!notes) {
+      alert('Please enter some research notes first!');
+      return;
+    }
 
-      bodyInput.value = currentText.substring(0, start) + notesContent + currentText.substring(end);
-      bodyInput.focus();
-      
-      // Set cursor right after inserted text
-      const newCursorPos = start + notesContent.length;
-      bodyInput.setSelectionRange(newCursorPos, newCursorPos);
-    });
+    // Set a formatted subject line
+    subjectInput.value = 'Re: Research & Connection Inquiry';
+
+    // Build the formatted email body
+    const emailBody = `Hello,\n\nI came across your work and wanted to reach out regarding the following details:\n\n"${notes}"\n\nI would love to learn more about your current projects and discuss potential ways to collaborate.\n\nBest regards,\n[Your Name]`;
+
+    bodyInput.value = emailBody;
+  });
+
+  // Insert research notes into body at cursor position
+  insertNotesChip.addEventListener('click', () => {
+    const notesContent = notesInput.value || '';
+    const start = bodyInput.selectionStart || 0;
+    const end = bodyInput.selectionEnd || 0;
+    const currentText = bodyInput.value;
+
+    bodyInput.value = currentText.substring(0, start) + notesContent + currentText.substring(end);
+    bodyInput.focus();
+
+    const newCursorPos = start + notesContent.length;
+    bodyInput.setSelectionRange(newCursorPos, newCursorPos);
   });
 
   // Copy subject and body to clipboard

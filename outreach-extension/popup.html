@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 14px;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #1e293b;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      margin: 8px 0 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 9px;
+      font-size: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+    }
+    .chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .chip {
+      background: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-family: monospace;
+      cursor: pointer;
+    }
+    .chip:hover {
+      background: #c7d2fe;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    button {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background-color: #e2e8f0;
+      color: #334155;
+    }
+    .btn-secondary:hover {
+      background-color: #cbd5e1;
+    }
+    .btn-primary {
+      background-color: #4f46e5;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background-color: #4338ca;
+    }
+    #status {
+      font-size: 11px;
+      color: #16a34a;
+      margin-top: 6px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h3>Outreach Hub Companion</h3>
+
+  <label>Recipient Email</label>
+  <input type="email" id="email" placeholder="e.g. professor@university.edu" />
+
+  <label>Research Notes (Manual Entry)</label>
+  <textarea id="notes" rows="3" placeholder="Paste notes from this page..."></textarea>
+
+  <label>Subject</label>
+  <input type="text" id="subject" placeholder="Outreach subject line..." />
+
+  <label>Email Body</label>
+  <textarea id="body" rows="6" placeholder="Write your message..."></textarea>
+
+  <div class="chip-container">
+    <button type="button" class="chip" data-var="{{Research Notes}}">+ {{Research Notes}}</button>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn-secondary" id="copyBtn">Copy Text</button>
+    <button type="button" class="btn-primary" id="sendBtn">Open in Gmail</button>
+  </div>
+
+  <div id="status">Copied to clipboard!</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

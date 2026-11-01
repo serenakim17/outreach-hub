@@ -33,13 +33,13 @@ export const ComposerView: React.FC = () => {
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [researchNotes, setResearchNotes] = useState(''); // Dedicated local state for smooth typing/deleting
+  const [researchNotes, setResearchNotes] = useState(''); // Starts blank
   const [isCopied, setIsCopied] = useState(false);
   const [showGeminiModal, setShowGeminiModal] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync draft and research notes whenever the selected contact changes
+  // Sync draft whenever selected contact changes, keeping research notes empty unless edited
   useEffect(() => {
     if (activeContact) {
       setSelectedId(activeContact.id);
@@ -199,7 +199,7 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Field */}
+          {/* Research Notes Field — Blank by default with simplified placeholder */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
@@ -209,7 +209,7 @@ Thank you for your time and leadership in STEM.`;
               rows={4}
               value={researchNotes}
               onChange={(e) => handleNotesChange(e.target.value)}
-              placeholder="Paste research notes from Google Sheets here..."
+              placeholder="Paste notes here..."
               className="w-full p-2.5 bg-white rounded-lg border border-slate-300 text-xs text-slate-700 leading-relaxed font-sans focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>

@@ -33,19 +33,19 @@ export const ComposerView: React.FC = () => {
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [researchNotes, setResearchNotes] = useState(''); // Starts blank
+  const [researchNotes, setResearchNotes] = useState(''); // Always starts blank
   const [isCopied, setIsCopied] = useState(false);
   const [showGeminiModal, setShowGeminiModal] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync draft whenever selected contact changes, keeping research notes empty unless edited
+  // Sync draft whenever selected contact changes; forces research notes to always start empty
   useEffect(() => {
     if (activeContact) {
       setSelectedId(activeContact.id);
       setSubject(activeContact.draftSubject || '');
       setBody(activeContact.draftBody || '');
-      setResearchNotes(activeContact.researchNotes || '');
+      setResearchNotes(''); // Always empty when loading/switching contacts
     }
   }, [activeContact?.id]);
 
@@ -60,7 +60,7 @@ export const ComposerView: React.FC = () => {
     );
   };
 
-  // Insert variable into body at cursor
+  // Insert variable into body at cursor position
   const insertVariable = (variableKey: string) => {
     let valueToInsert = variableKey;
     if (activeContact) {
@@ -199,7 +199,7 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Field — Blank by default with simplified placeholder */}
+          {/* Research Notes Field — Completely blank with placeholder "Paste notes here..." */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />

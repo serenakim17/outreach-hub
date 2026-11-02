@@ -25,7 +25,6 @@ export const ComposerView: React.FC = () => {
     addToast,
   } = useOutreach();
 
-  // Active selected contact ID
   const [selectedId, setSelectedId] = useState<string>(
     selectedContactIdForComposer || contacts[0]?.id || ''
   );
@@ -41,7 +40,6 @@ export const ComposerView: React.FC = () => {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync draft whenever selected contact changes
   useEffect(() => {
     if (activeContact) {
       setSelectedId(activeContact.id);
@@ -51,7 +49,6 @@ export const ComposerView: React.FC = () => {
     }
   }, [activeContact?.id]);
 
-  // Handle local text changes and update global contact state
   const handleNotesChange = (text: string) => {
     setResearchNotes(text);
     if (!activeContact) return;
@@ -62,7 +59,6 @@ export const ComposerView: React.FC = () => {
     );
   };
 
-  // Insert variable into body at cursor position
   const insertVariable = (variableKey: string) => {
     let valueToInsert = variableKey;
     if (activeContact) {
@@ -177,7 +173,6 @@ Thank you for your time and leadership in STEM.`;
 
   return (
     <div className="space-y-4">
-      {/* Top Banner Notice */}
       <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center justify-between gap-3 text-xs text-blue-900">
         <div className="flex items-center gap-2">
           <Info className="w-4 h-4 text-blue-600 shrink-0" />
@@ -187,9 +182,7 @@ Thank you for your time and leadership in STEM.`;
         </div>
       </div>
 
-      {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left Panel */}
         <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -208,7 +201,6 @@ Thank you for your time and leadership in STEM.`;
             </select>
           </div>
 
-          {/* Contact Card */}
           <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -232,7 +224,6 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Field */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
@@ -247,7 +238,6 @@ Thank you for your time and leadership in STEM.`;
             />
           </div>
 
-          {/* Quick Variable Chips */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
               Insert Variable into Body
@@ -280,7 +270,6 @@ Thank you for your time and leadership in STEM.`;
           )}
         </div>
 
-        {/* Right Editor Panel */}
         <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3 flex-wrap">
             <div>

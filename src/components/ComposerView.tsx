@@ -12,6 +12,7 @@ import {
   BookOpen,
   Info,
   Clock,
+  Loader2,
 } from 'lucide-react';
 
 export const ComposerView: React.FC = () => {
@@ -33,19 +34,20 @@ export const ComposerView: React.FC = () => {
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [researchNotes, setResearchNotes] = useState(''); // Always starts blank
+  const [researchNotes, setResearchNotes] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [showGeminiModal, setShowGeminiModal] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync draft whenever selected contact changes; forces research notes to always start empty
+  // Sync draft whenever selected contact changes
   useEffect(() => {
     if (activeContact) {
       setSelectedId(activeContact.id);
       setSubject(activeContact.draftSubject || '');
       setBody(activeContact.draftBody || '');
-      setResearchNotes(''); // Always empty when loading/switching contacts
+      setResearchNotes('');
     }
   }, [activeContact?.id]);
 
@@ -105,6 +107,41 @@ export const ComposerView: React.FC = () => {
     setTimeout(() => setIsCopied(false), 2500);
   };
 
+  const handleSendEmail = async () => {
+    if (!activeContact?.email || !subject.trim() || !body.trim()) {
+      addToast('Recipient email, subject, and body are required.', 'info');
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      const fullBodyWithSignature = `${body}\n\n${settings.emailSignature}`;
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail: activeContact.email,
+          subject: subject,
+          body: fullBodyWithSignature,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        addToast(`Email successfully sent to ${activeContact.email}!`, 'info');
+      } else {
+        addToast(`Error: ${result.error || 'Failed to send email'}`, 'info');
+      }
+    } catch (err) {
+      addToast('Failed to reach serverless send endpoint.', 'info');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleLoadSampleDraft = () => {
     if (!activeContact) return;
     const generatedSubject = `Exploring STEM Collaboration with ${activeContact.organization} · ${settings.organizationName}`;
@@ -141,17 +178,13 @@ Thank you for your time and leadership in STEM.`;
   return (
     <div className="space-y-4">
       {/* Top Banner Notice */}
-      <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900">
+      <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center justify-between gap-3 text-xs text-blue-900">
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-amber-600 shrink-0" />
+          <Info className="w-4 h-4 text-blue-600 shrink-0" />
           <span>
-            <strong>Local Composer Mode:</strong> Save Draft stores your writing in browser localStorage.
-            Direct automated sending requires Gmail OAuth credentials to be configured by the backend team.
+            <strong>Serverless Email Outreach Active:</strong> Emails are delivered directly using the Resend API.
           </span>
         </div>
-        <span className="font-mono text-[11px] text-amber-700 font-medium shrink-0 hidden sm:inline">
-          No external API keys required
-        </span>
       </div>
 
       {/* Main Split Layout */}
@@ -199,7 +232,7 @@ Thank you for your time and leadership in STEM.`;
             </div>
           </div>
 
-          {/* Research Notes Field — Completely blank with placeholder "Paste notes here..." */}
+          {/* Research Notes Field */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
@@ -263,9 +296,6 @@ Thank you for your time and leadership in STEM.`;
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               <span>Generate with Gemini</span>
-              <span className="text-[10px] bg-indigo-200/80 text-indigo-800 px-1.5 py-0.2 rounded-sm font-medium">
-                Integration Pending
-              </span>
             </button>
           </div>
 
@@ -291,7 +321,7 @@ Thank you for your time and leadership in STEM.`;
               rows={12}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Write your personalized outreach email here. Incorporate the research notes on the left for genuine connection..."
+              placeholder="Write your personalized outreach email here..."
               className="w-full flex-1 px-3.5 py-3 text-sm rounded-lg border border-slate-300 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 leading-relaxed font-sans"
             />
           </div>
@@ -324,12 +354,16 @@ Thank you for your time and leadership in STEM.`;
               </button>
 
               <button
-                disabled
-                title="Direct sending requires Google Workspace OAuth connection to be completed by the backend team."
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed opacity-80"
+                onClick={handleSendEmail}
+                disabled={isSending}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs disabled:opacity-50"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Connect Gmail to enable</span>
+                {isSending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                <span>{isSending ? 'Sending...' : 'Send Email'}</span>
               </button>
             </div>
           </div>
@@ -348,9 +382,6 @@ Thank you for your time and leadership in STEM.`;
                   <h3 className="text-base font-bold text-slate-900">
                     Template Assistant
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-sm">
-                    Manual Mode Enabled
-                  </span>
                 </div>
               </div>
             </div>

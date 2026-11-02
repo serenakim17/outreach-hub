@@ -1,3 +1,7 @@
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 export interface ApiRequest {
   method?: string;
   body: any;
@@ -17,6 +21,7 @@ interface SendEmailBody {
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
+  // Set CORS headers so your frontend can talk to this API route smoothly
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -29,20 +34,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { toEmail, subject, body }: SendEmailBody = req.body;
+  const { toEmail, subject, body }: SendEmailBody = req.body || {};
 
   if (!toEmail || !subject || !body) {
-    return res.status(400).json({ error: 'Recipient, subject, and body are required.' });
+    return res.status(400).json({ error: 'Recipient email, subject, and body are required.' });
   }
 
-  const gmailConnected = process.env.GMAIL_OAUTH_CLIENT_ID && process.env.GMAIL_OAUTH_TOKEN;
-
-  if (!gmailConnected) {
-    return res.status(200).json({
-      status: 'pending_integration',
-      message: `Email draft staged for ${toEmail}. Gmail API integration key is required in environment variables to execute direct sends.`,
+  try {
+    const data = await resend.emails.send({
+      from: 'Outreach Hub <onboarding@resend.dev>',
+      to: [toEmail],
+      subject: subject,
+      text: body,
     });
-  }
 
-  return res.status(200).json({ status: 'sent', recipient: toEmail });
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to deliver email through provider.' });
+  }
 }

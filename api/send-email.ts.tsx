@@ -18,10 +18,10 @@ interface SendEmailBody {
   toEmail: string;
   subject: string;
   body: string;
+  htmlBody?: string; // Optional: for rich formatting
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  // Set CORS headers so your frontend can talk to this API route smoothly
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,7 +34,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { toEmail, subject, body }: SendEmailBody = req.body || {};
+  const { toEmail, subject, body, htmlBody }: SendEmailBody = req.body || {};
 
   if (!toEmail || !subject || !body) {
     return res.status(400).json({ error: 'Recipient email, subject, and body are required.' });
@@ -46,10 +46,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       to: [toEmail],
       subject: subject,
       text: body,
+      // Automatically convert line breaks to HTML if htmlBody isn't explicitly provided
+      html: htmlBody || body.replace(/\n/g, '<br>'),
     });
 
     return res.status(200).json({ success: true, data });
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to deliver email through provider.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to deliver email through provider.' });
   }
 }

@@ -69,7 +69,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   try {
     // 2. KEEP YOUR USER PROMPT CLEAN & FOCUSED ON TASK
-    const userPrompt = `Write a professional, warm outreach email inviting ${contactName} (${role} at ${organization}) to host a STEMsters workshop. Sign off as ${volunteerName}, ${volunteerRole}. Return output strictly as JSON with keys "subject" and "body".`;
+    const userPrompt = `Write a professional, warm outreach email inviting ${contactName} (${role} at ${organization}) to host a 1-hour STEMsters hands-on workshop ($50 total kit cost). Sign off as ${volunteerName}, ${volunteerRole}. Return output strictly as JSON with keys "subject" and "body".`;
 
     const endpointUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' +

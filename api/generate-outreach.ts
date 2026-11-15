@@ -84,11 +84,21 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           parts: [{ text: systemInstructionText }]
         },
         contents: [{ parts: [{ text: userPrompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       }),
     });
 
     const data = await response.json();
-    return res.status(200).json({ status: 'success', data });
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const parsed = JSON.parse(rawText);
+
+    return res.status(200).json({
+      status: 'success',
+      subject: parsed.subject || `STEMsters Workshop Opportunity for ${organization}`,
+      body: parsed.body || rawText,
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to generate outreach text.' });
   }

@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   PenSquare,
-  Clock,
   Settings as SettingsIcon,
   Sparkles,
   ExternalLink,
@@ -20,7 +19,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {
   const { activePage, setActivePage, contacts, settings } = useOutreach();
 
-  const dueFollowupsCount = contacts.filter((c) => c.status === 'Follow-up Due').length;
   const draftCount = contacts.filter((c) => c.status === 'Draft Ready').length;
 
   const navItems: { id: PageId; label: string; icon: React.ElementType; badge?: number; badgeColor?: string }[] = [
@@ -42,13 +40,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       icon: PenSquare,
       badge: draftCount > 0 ? draftCount : undefined,
       badgeColor: 'bg-indigo-900/60 text-indigo-200',
-    },
-    {
-      id: 'followups',
-      label: 'Follow-ups',
-      icon: Clock,
-      badge: dueFollowupsCount > 0 ? dueFollowupsCount : undefined,
-      badgeColor: 'bg-amber-900/60 text-amber-200',
     },
     {
       id: 'settings',

@@ -1,3 +1,5 @@
+import { buildEmailSystemPrompt } from './knowledgeBase';
+
 export interface ApiRequest {
   method?: string;
   body: any;

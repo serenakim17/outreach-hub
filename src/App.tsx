@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
 import { OutreachProvider, useOutreach } from './context/OutreachContext';
 import { Sidebar } from './components/Sidebar';
@@ -12,7 +7,6 @@ import { ContactModal } from './components/ContactModal';
 import { DashboardView } from './components/DashboardView';
 import { ContactsView } from './components/ContactsView';
 import { ComposerView } from './components/ComposerView';
-import { FollowUpsView } from './components/FollowUpsView';
 import { SettingsView } from './components/SettingsView';
 
 const MainLayout: React.FC = () => {
@@ -28,8 +22,6 @@ const MainLayout: React.FC = () => {
         return <ContactsView />;
       case 'composer':
         return <ComposerView />;
-      case 'followups':
-        return <FollowUpsView />;
       case 'settings':
         return <SettingsView />;
       default:

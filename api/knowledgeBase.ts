@@ -1,4 +1,12 @@
 export const STEMSTERS_KNOWLEDGE_BASE = `
+  ...all your rules and facts...
+`.trim();
+
+export function buildEmailSystemPrompt(recipientContext?: { ... }) {
+  ...
+}
+
+export const STEMSTERS_KNOWLEDGE_BASE = `
 === STRICT ANTI-HALLUCINATION & GROUNDING RULES ===
 1. ONLY use facts, pricing, timelines, and policies explicitly listed in this knowledge base.
 2. NEVER invent statistics, grant numbers, named school districts, corporate sponsors, or specific project names not listed here.

@@ -1,419 +1,805 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import { useOutreach } from '../context/OutreachContext';
+
 import { StatusBadge } from './StatusBadge';
+
 import {
+
   Sparkles,
+
   Save,
+
   Send,
+
   Copy,
+
   Check,
+
   Building2,
+
   Mail,
+
   BookOpen,
+
   Info,
+
   Clock,
+
   Loader2,
+
 } from 'lucide-react';
 
+
+
 export const ComposerView: React.FC = () => {
+
   const {
+
     contacts,
+
     setContacts,
+
     selectedContactIdForComposer,
+
     saveDraft,
+
     settings,
+
     addToast,
+
   } = useOutreach();
 
+
+
   const [selectedId, setSelectedId] = useState<string>(
+
     selectedContactIdForComposer || contacts[0]?.id || ''
+
   );
+
+
 
   const activeContact = contacts.find((c) => c.id === selectedId) || contacts[0];
 
+
+
   const [subject, setSubject] = useState('');
+
   const [body, setBody] = useState('');
+
   const [researchNotes, setResearchNotes] = useState('');
+
   const [isCopied, setIsCopied] = useState(false);
+
   const [isSending, setIsSending] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+
   const [showGeminiModal, setShowGeminiModal] = useState(false);
+
+
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+
+
   useEffect(() => {
+
     if (activeContact) {
+
       setSelectedId(activeContact.id);
+
       setSubject(activeContact.draftSubject || '');
+
       setBody(activeContact.draftBody || '');
+
       setResearchNotes('');
+
     }
+
   }, [activeContact?.id]);
 
+
+
   const handleNotesChange = (text: string) => {
+
     setResearchNotes(text);
+
     if (!activeContact) return;
+
     setContacts((prevContacts: any[]) =>
+
       prevContacts.map((c) =>
+
         c.id === activeContact.id ? { ...c, researchNotes: text } : c
+
       )
+
     );
+
   };
+
+
 
   const insertVariable = (variableKey: string) => {
+
     let valueToInsert = variableKey;
+
     if (activeContact) {
+
       if (variableKey === '{{First Name}}') valueToInsert = activeContact.firstName;
+
       if (variableKey === '{{Last Name}}') valueToInsert = activeContact.lastName;
+
       if (variableKey === '{{Organization}}') valueToInsert = activeContact.organization;
+
       if (variableKey === '{{Role}}') valueToInsert = activeContact.role || 'Partner';
+
       if (variableKey === '{{My Organization}}') valueToInsert = settings.organizationName;
+
       if (variableKey === '{{Research Notes}}') valueToInsert = researchNotes;
+
     }
+
+
 
     if (!textareaRef.current) {
+
       setBody((prev) => prev + valueToInsert);
+
       return;
+
     }
+
+
 
     const start = textareaRef.current.selectionStart;
+
     const end = textareaRef.current.selectionEnd;
+
     const currentText = body;
+
     const newText = currentText.substring(0, start) + valueToInsert + currentText.substring(end);
+
     setBody(newText);
 
+
+
     setTimeout(() => {
+
       if (textareaRef.current) {
+
         textareaRef.current.focus();
+
         textareaRef.current.setSelectionRange(start + valueToInsert.length, start + valueToInsert.length);
+
       }
+
     }, 0);
+
   };
+
+
 
   const handleSaveDraft = () => {
+
     if (!activeContact) return;
+
     saveDraft(activeContact.id, subject, body);
+
   };
+
+
 
   const handleCopy = () => {
+
     if (!activeContact) return;
+
     const fullText = `Subject: ${subject}\n\n${body}\n\n${settings.emailSignature}`;
+
     navigator.clipboard.writeText(fullText);
+
     setIsCopied(true);
+
     addToast('Subject and email body copied to clipboard!', 'info');
+
     setTimeout(() => setIsCopied(false), 2500);
+
   };
 
+
+
   const handleSendEmail = async () => {
+
     if (!activeContact?.email || !subject.trim() || !body.trim()) {
+
       addToast('Recipient email, subject, and body are required.', 'info');
+
       return;
+
     }
+
+
 
     setIsSending(true);
 
+
+
     try {
+
       const fullBodyWithSignature = `${body}\n\n${settings.emailSignature}`;
 
+
+
       const response = await fetch('/api/send-email', {
+
         method: 'POST',
+
         headers: { 'Content-Type': 'application/json' },
+
         body: JSON.stringify({
+
           toEmail: activeContact.email,
+
           subject: subject,
+
           body: fullBodyWithSignature,
+
         }),
+
       });
+
+
 
       const result = await response.json();
 
+
+
       if (response.ok && result.success) {
+
         addToast(`Email successfully sent to ${activeContact.email}!`, 'info');
+
       } else {
+
         addToast(`Error: ${result.error || 'Failed to send email'}`, 'info');
+
       }
+
     } catch (err) {
+
       addToast('Failed to reach serverless send endpoint.', 'info');
+
     } finally {
+
       setIsSending(false);
+
     }
+
   };
 
-  const handleGenerateWithGemini = async () => {
+
+
+  const handleLoadSampleDraft = () => {
+
     if (!activeContact) return;
-    setIsGenerating(true);
 
-    try {
-      const response = await fetch('/api/generate-outreach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contactName: `${activeContact.firstName} ${activeContact.lastName}`,
-          organization: activeContact.organization,
-          role: activeContact.role,
-          researchNotes: researchNotes,
-          volunteerName: settings.volunteerName,
-          volunteerRole: settings.volunteerRole,
-          organizationName: settings.organizationName,
-        }),
-      });
+    const generatedSubject = `Exploring STEM Collaboration with ${activeContact.organization} · ${settings.organizationName}`;
 
-      const data = await response.json();
-      if (response.ok && data.subject && data.body) {
-        setSubject(data.subject);
-        setBody(data.body);
-        setShowGeminiModal(false);
-        addToast('Successfully generated grounded STEMsters email!', 'info');
-      } else {
-        addToast(`Error: ${data.error || 'Failed to generate email'}`, 'info');
-      }
-    } catch (err) {
-      addToast('Failed to reach generation API endpoint.', 'info');
-    } finally {
-      setIsGenerating(false);
-    }
+    const generatedBody = `Dear ${activeContact.firstName ? activeContact.firstName : 'Partner'},
+
+
+
+I hope this message finds you well.
+
+
+
+My name is ${settings.volunteerName || 'Alex Rivera'}, representing ${settings.organizationName}. I have been following ${activeContact.organization}'s remarkable work${
+
+      researchNotes ? `—specifically: "${researchNotes.slice(0, 110)}..."` : ''
+
+    } and was inspired to reach out directly.
+
+
+
+Our student alliance coordinates hands-on outreach, career panels, and technical symposiums for over 200 aspiring collegiate engineers and local high schoolers. Given your background in ${activeContact.role || 'your field'}, we would be deeply honored to collaborate with you this academic term.
+
+
+
+Could we schedule a brief 10-minute introductory conversation next week to explore potential partnership opportunities?
+
+
+
+Thank you for your time and leadership in STEM.`;
+
+
+
+    setSubject(generatedSubject);
+
+    setBody(generatedBody);
+
+    setShowGeminiModal(false);
+
+    addToast('Loaded personalized demonstrative draft for review.', 'info');
+
   };
+
+
 
   if (!activeContact) {
+
     return (
+
       <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+
         <Mail className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+
         <h3 className="text-sm font-semibold text-slate-800">No Contacts in Database</h3>
+
         <p className="text-xs text-slate-500 mt-1">Please add a contact first before composing an outreach email.</p>
+
       </div>
+
     );
+
   }
 
+
+
   return (
+
     <div className="space-y-4">
+
       <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center justify-between gap-3 text-xs text-blue-900">
+
         <div className="flex items-center gap-2">
+
           <Info className="w-4 h-4 text-blue-600 shrink-0" />
+
           <span>
+
             <strong>Serverless Email Outreach Active:</strong> Emails are delivered directly using the Resend API.
+
           </span>
+
         </div>
+
       </div>
+
+
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
         <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+
           <div>
+
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+
               Select Recipient Contact
+
             </label>
+
             <select
+
               value={selectedId}
+
               onChange={(e) => setSelectedId(e.target.value)}
+
               className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium text-slate-800 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+
             >
+
               {contacts.map((c) => (
+
                 <option key={c.id} value={c.id}>
+
                   {c.firstName} {c.lastName} — {c.organization}
+
                 </option>
+
               ))}
+
             </select>
+
           </div>
+
+
 
           <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs">
+
             <div className="flex items-start justify-between gap-2">
+
               <div>
+
                 <h4 className="font-bold text-slate-900 text-sm">
+
                   {activeContact.firstName} {activeContact.lastName}
+
                 </h4>
+
                 <p className="text-slate-600 text-xs font-medium">{activeContact.role || 'Member'}</p>
+
               </div>
+
               <StatusBadge status={activeContact.status} size="sm" />
+
             </div>
+
+
 
             <div className="pt-2 border-t border-slate-200/80 space-y-1.5 text-slate-600">
+
               <div className="flex items-center gap-2">
+
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+
                 <span className="font-medium truncate">{activeContact.organization}</span>
+
               </div>
+
               <div className="flex items-center gap-2">
+
                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+
                 <span className="font-mono text-[11px] truncate">{activeContact.email}</span>
+
               </div>
+
             </div>
+
           </div>
+
+
 
           <div className="space-y-1.5">
+
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+
               <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+
               <span>Research Notes for Personalization</span>
+
             </div>
+
             <textarea
+
               rows={4}
+
               value={researchNotes}
+
               onChange={(e) => handleNotesChange(e.target.value)}
+
               placeholder="Paste notes here..."
+
               className="w-full p-2.5 bg-white rounded-lg border border-slate-300 text-xs text-slate-700 leading-relaxed font-sans focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+
             />
+
           </div>
+
+
 
           <div className="space-y-2 pt-2 border-t border-slate-100">
+
             <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+
               Insert Variable into Body
+
             </label>
+
             <div className="flex flex-wrap gap-1.5">
+
               {[
+
                 '{{First Name}}',
+
                 '{{Organization}}',
+
                 '{{Role}}',
+
                 '{{My Organization}}',
+
                 '{{Research Notes}}',
+
               ].map((token) => (
+
                 <button
+
                   key={token}
+
                   type="button"
+
                   onClick={() => insertVariable(token)}
+
                   className="px-2 py-1 text-[11px] font-mono bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 border border-slate-200 rounded-md transition-colors"
+
                 >
+
                   {token}
+
                 </button>
+
               ))}
+
             </div>
+
           </div>
+
+
 
           {activeContact.draftUpdatedAt && (
+
             <div className="text-[11px] text-slate-400 font-mono tabular-nums flex items-center gap-1.5 pt-2">
+
               <Clock className="w-3 h-3" />
+
               <span>Last saved: {new Date(activeContact.draftUpdatedAt).toLocaleString()}</span>
+
             </div>
+
           )}
+
         </div>
+
+
 
         <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col space-y-4">
+
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-3 flex-wrap">
+
             <div>
+
               <h3 className="text-sm font-semibold text-slate-900">Email Draft Workspace</h3>
+
               <p className="text-xs text-slate-500">
+
                 To: <span className="font-mono text-slate-700">{activeContact.email}</span>
+
               </p>
+
             </div>
 
+
+
             <button
+
               onClick={() => setShowGeminiModal(true)}
+
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+
             >
+
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+
               <span>Generate with Gemini</span>
+
             </button>
+
           </div>
+
+
 
           <div>
+
             <label className="block text-xs font-semibold text-slate-700 mb-1">
+
               Subject Line
+
             </label>
+
             <input
+
               type="text"
+
               value={subject}
+
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. STEMsters Hands-On Workshop Partnership"
+
+              placeholder="e.g. Invitation: Keynote Speaker for Fall Student Tech Symposium"
+
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 font-medium"
+
             />
+
           </div>
+
+
 
           <div className="flex-1 flex flex-col">
+
             <label className="block text-xs font-semibold text-slate-700 mb-1">
+
               Email Body
+
             </label>
+
             <textarea
+
               ref={textareaRef}
+
               rows={12}
+
               value={body}
+
               onChange={(e) => setBody(e.target.value)}
+
               placeholder="Write your personalized outreach email here..."
+
               className="w-full flex-1 px-3.5 py-3 text-sm rounded-lg border border-slate-300 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 leading-relaxed font-sans"
+
             />
+
           </div>
+
+
 
           <div className="p-3 bg-slate-50/70 border border-slate-200 rounded-lg text-xs text-slate-600">
+
             <span className="text-[11px] font-semibold text-slate-400 block mb-1 uppercase tracking-wider">
+
               Automatic Organization Signature
+
             </span>
+
             <div className="font-mono text-[11px] whitespace-pre-wrap text-slate-700">
+
               {settings.emailSignature}
+
             </div>
+
           </div>
+
+
 
           <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+
             <button
+
               onClick={handleCopy}
+
               className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+
             >
+
               {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+
               <span>{isCopied ? 'Copied to Clipboard' : 'Copy Subject & Body'}</span>
+
             </button>
 
+
+
             <div className="flex items-center gap-2 justify-end">
-              <button
-                onClick={handleSaveDraft}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs"
-              >
-                <Save className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Save Draft (Local)</span>
-              </button>
 
               <button
-                onClick={handleSendEmail}
-                disabled={isSending}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs disabled:opacity-50"
+
+                onClick={handleSaveDraft}
+
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs"
+
               >
-                {isSending ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>{isSending ? 'Sending...' : 'Send Email'}</span>
+
+                <Save className="w-3.5 h-3.5 text-indigo-600" />
+
+                <span>Save Draft (Local)</span>
+
               </button>
+
+
+
+              <button
+
+                onClick={handleSendEmail}
+
+                disabled={isSending}
+
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs disabled:opacity-50"
+
+              >
+
+                {isSending ? (
+
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+
+                ) : (
+
+                  <Send className="w-3.5 h-3.5" />
+
+                )}
+
+                <span>{isSending ? 'Sending...' : 'Send Email'}</span>
+
+              </button>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
 
+
+
       {showGeminiModal && (
+
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden p-6 space-y-4">
+
             <div className="flex items-start justify-between">
+
               <div className="flex items-center gap-2.5">
+
                 <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+
                   <Sparkles className="w-5 h-5" />
+
                 </div>
+
                 <div>
+
                   <h3 className="text-base font-bold text-slate-900">
-                    Generate STEMsters Email
+
+                    Template Assistant
+
                   </h3>
+
                 </div>
+
               </div>
+
             </div>
+
+
 
             <div className="text-xs text-slate-600 space-y-2.5 leading-relaxed bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+
               <p>
-                Generate a personalized outreach email using the STEMsters Knowledge Base for: <strong>{activeContact.firstName} {activeContact.lastName}</strong> at <em>{activeContact.organization}</em>.
+
+                You are currently using manual research note entry for: <strong>{activeContact.firstName} {activeContact.lastName}</strong> at <em>{activeContact.organization}</em>.
+
               </p>
+
             </div>
 
+
+
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+
               <button
+
                 onClick={() => setShowGeminiModal(false)}
-                disabled={isGenerating}
+
                 className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+
               >
+
                 Close
+
               </button>
+
               <button
-                onClick={handleGenerateWithGemini}
-                disabled={isGenerating}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs disabled:opacity-50"
+
+                onClick={handleLoadSampleDraft}
+
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs"
+
               >
-                {isGenerating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{isGenerating ? 'Generating...' : 'Generate Draft'}</span>
+
+                Load Sample Draft
+
               </button>
+
             </div>
+
           </div>
+
         </div>
+
       )}
+
     </div>
+
   );
-};
+
+}; 

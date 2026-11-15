@@ -49,6 +49,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(400).json({ error: 'Missing required contact fields.' });
   }
 
+  // 1. BUILD THE GROUNDED SYSTEM PROMPT FROM YOUR KNOWLEDGE BASE
+  const systemInstructionText = buildEmailSystemPrompt({
+    centerName: organization,
+    contactName: contactName,
+    contactRole: role,
+    notes: researchNotes,
+  });
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -60,17 +68,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
-    const prompt = `You are an outreach assistant for ${organizationName}. Write a professional, warm outreach email to ${contactName} (${role} at ${organization}). Use these background research notes: "${researchNotes}". Sign off as ${volunteerName}, ${volunteerRole}. Return output strictly as JSON with keys "subject" and "body".`;
+    // 2. KEEP YOUR USER PROMPT CLEAN & FOCUSED ON TASK
+    const userPrompt = `Write a professional, warm outreach email inviting ${contactName} (${role} at ${organization}) to host a STEMsters workshop. Sign off as ${volunteerName}, ${volunteerRole}. Return output strictly as JSON with keys "subject" and "body".`;
 
     const endpointUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' +
       encodeURIComponent(apiKey as string);
 
+    // 3. PASS THE SYSTEM INSTRUCTION TO GEMINI
     const response = await fetch(endpointUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: {
+          parts: [{ text: systemInstructionText }]
+        },
+        contents: [{ parts: [{ text: userPrompt }] }],
       }),
     });
 

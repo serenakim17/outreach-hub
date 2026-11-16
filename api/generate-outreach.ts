@@ -1,105 +1,54 @@
-import { buildEmailSystemPrompt } from './knowledgeBase';
+import { GoogleGenAI } from '@google/genai';
+import { buildEmailSystemPrompt } from './knowledgeBase.js';
 
-export interface ApiRequest {
-  method?: string;
-  body: any;
-}
-
-export interface ApiResponse {
-  status: (code: number) => ApiResponse;
-  json: (data: any) => any;
-  setHeader: (name: string, value: string) => void;
-  end: () => void;
-}
-
-interface GenerateRequestBody {
-  contactName: string;
-  organization: string;
-  role: string;
-  researchNotes: string;
-  volunteerName: string;
-  volunteerRole: string;
-  organizationName: string;
-}
-
-export default async function handler(req: ApiRequest, res: ApiResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  const {
-    contactName,
-    organization,
-    role,
-    researchNotes,
-    volunteerName,
-    volunteerRole,
-    organizationName,
-  }: GenerateRequestBody = req.body;
-
-  if (!contactName || !organization) {
-    return res.status(400).json({ error: 'Missing required contact fields.' });
-  }
-
-  // 1. BUILD THE GROUNDED SYSTEM PROMPT FROM YOUR KNOWLEDGE BASE
-  const systemInstructionText = buildEmailSystemPrompt({
-    centerName: organization,
-    contactName: contactName,
-    contactRole: role,
-    notes: researchNotes,
-  });
-
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    return res.status(200).json({
-      status: 'placeholder',
-      subject: `Collaboration Opportunity with ${organizationName}`,
-      body: `Dear ${contactName},\n\nI hope this email finds you well. I am reaching out on behalf of ${organizationName} regarding your work as ${role} at ${organization}.\n\n[Personalized detail based on: "${researchNotes || 'your recent contributions'}"]\n\nWe would love to connect for a short 15-minute call to explore potential collaboration.\n\nBest regards,\n${volunteerName}\n${volunteerRole} | ${organizationName}`,
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // 2. KEEP YOUR USER PROMPT CLEAN & FOCUSED ON TASK
-    const userPrompt = `Write a professional, warm outreach email inviting ${contactName} (${role} at ${organization}) to host a 1-hour STEMsters hands-on workshop ($50 total kit cost). Sign off as ${volunteerName}, ${volunteerRole}. Return output strictly as JSON with keys "subject" and "body".`;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Missing GEMINI_API_KEY in Vercel environment variables.' });
+    }
 
-    const endpointUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' +
-      encodeURIComponent(apiKey as string);
+    const {
+      contactName,
+      organization,
+      role,
+      researchNotes,
+    } = req.body || {};
 
-    // 3. PASS THE SYSTEM INSTRUCTION TO GEMINI
-    const response = await fetch(endpointUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemInstructionText }]
-        },
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      }),
+    const systemInstruction = buildEmailSystemPrompt({
+      centerName: organization || 'Partner Organization',
+      contactName: contactName || 'Partner',
+      contactRole: role || 'Community Leader',
+      notes: researchNotes || '',
     });
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const parsed = JSON.parse(rawText);
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Write a personalized STEMsters outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
+      config: {
+        systemInstruction,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const rawText = response.text || '';
+    const cleanedJson = rawText.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleanedJson);
 
     return res.status(200).json({
-      status: 'success',
-      subject: parsed.subject || `STEMsters Workshop Opportunity for ${organization}`,
-      body: parsed.body || rawText,
+      subject: parsed.subject,
+      body: parsed.body,
     });
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to generate outreach text.' });
+  } catch (error: any) {
+    console.error('Error generating email:', error);
+    return res.status(500).json({
+      error: error?.message || 'Failed to generate email with Gemini',
+    });
   }
 }

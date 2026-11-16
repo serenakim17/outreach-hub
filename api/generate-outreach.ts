@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-// Tells Vercel to allow up to 30 seconds for this function to run
+// Tells Vercel to allow up to 30 seconds (requires Pro plan; capped at 10s on Hobby)
 export const maxDuration = 30;
 
 export default async function handler(req: any, res: any) {
@@ -19,7 +19,6 @@ export default async function handler(req: any, res: any) {
       organization,
       role,
       researchNotes,
-      volunteerName,
     } = req.body || {};
 
     const systemInstruction = `You are writing a concise, warm, personalized student outreach email on behalf of STEMsters.
@@ -34,32 +33,17 @@ WRITING INSTRUCTIONS:
 
     const ai = new GoogleGenAI({ apiKey });
 
-    let rawText = '';
-    
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: `Write an outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      });
-      rawText = response.text || '';
-    } catch (primaryError) {
-      console.warn('Primary model busy, falling back...', primaryError);
-      const fallbackResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Write an outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-        },
-      });
-      rawText = fallbackResponse.text || '';
-    }
+    // Single optimized call to prevent cascading timeouts and double latency
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: `Write an outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
+      config: {
+        systemInstruction,
+        responseMimeType: 'application/json',
+      },
+    });
 
+    const rawText = response.text || '';
     const cleanedJson = rawText.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleanedJson);
 
@@ -68,7 +52,7 @@ WRITING INSTRUCTIONS:
       body: parsed.body,
     });
   } catch (error: any) {
-    console.warn('Using instant fallback draft due to API delay:', error);
+    console.warn('Using instant fallback draft due to generation error/timeout:', error);
     
     const { contactName, organization, researchNotes } = req.body || {};
     return res.status(200).json({

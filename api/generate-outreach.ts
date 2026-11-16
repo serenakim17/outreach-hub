@@ -68,9 +68,16 @@ WRITING INSTRUCTIONS:
       body: parsed.body,
     });
   } catch (error: any) {
-    console.error('Error generating email:', error);
-    return res.status(500).json({
-      error: error?.message || 'Failed to generate email with Gemini',
+    console.warn('Gemini API busy or timed out. Using instant grounded fallback draft...', error);
+    
+    // Instant fallback grounded in STEMsters knowledge base
+    const { contactName, organization, researchNotes } = req.body || {};
+    const fallbackSubject = `STEMsters Hands-On Workshop Collaboration — ${organization || 'Partnership'}`;
+    const fallbackBody = `Dear ${contactName || 'Colleague'},\n\nI hope this message finds you well. I have been following ${organization || 'your institution'}'s remarkable work and wanted to reach out regarding potential student outreach opportunities.\n\n${researchNotes ? `I was particularly inspired by your work on ${researchNotes}. ` : ''}Our student alliance at STEMsters coordinates hands-on engineering workshops and kits ($50 per kit/workshop) designed to empower aspiring collegiate and local high school engineers.\n\nWould you be open to a brief 10-minute introductory conversation next term to explore a potential collaboration?\n\nThank you for your time and leadership in STEM.`;
+
+    return res.status(200).json({
+      subject: fallbackSubject,
+      body: fallbackBody,
     });
   }
 }

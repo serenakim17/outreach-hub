@@ -44,6 +44,8 @@ IMPORTANT STYLE & FOCUS OVERRIDE:
       config: {
         systemInstruction,
         responseMimeType: 'application/json',
+        thinkingConfig: { thinkingBudget: 0 },
+        maxOutputTokens: 500,
       },
     });
 

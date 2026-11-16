@@ -143,6 +143,9 @@ export const ComposerView: React.FC = () => {
     if (!activeContact) return;
     setIsGenerating(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     try {
       const response = await fetch('/api/generate-outreach', {
         method: 'POST',
@@ -156,22 +159,30 @@ export const ComposerView: React.FC = () => {
           volunteerRole: settings.volunteerRole,
           organizationName: settings.organizationName,
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
+
       if (response.ok && data.subject && data.body) {
         const cleanBody = data.body.replace(/\n{3,}/g, '\n\n').trim();
         setSubject(data.subject.trim());
         setBody(cleanBody);
         setShowGeminiModal(false);
-        addToast('Successfully generated grounded STEMsters email!', 'info');
+        addToast('Successfully generated email!', 'info');
       } else {
         addToast(`Error: ${data.error || 'Failed to generate email'}`, 'info');
       }
-    } catch (err) {
-      addToast('Failed to reach generation API endpoint.', 'info');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        addToast('Generation took too long and timed out. Please try again.', 'info');
+      } else {
+        addToast('Failed to reach generation API endpoint.', 'info');
+      }
     } finally {
       setIsGenerating(false);
+      clearTimeout(timeoutId);
     }
   };
 
@@ -350,71 +361,4 @@ export const ComposerView: React.FC = () => {
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={handleSaveDraft}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs"
-              >
-                <Save className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Save Draft (Local)</span>
-              </button>
-
-              <button
-                onClick={handleSendEmail}
-                disabled={isSending}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs disabled:opacity-50"
-              >
-                {isSending ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>{isSending ? 'Sending...' : 'Send Email'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {showGeminiModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden p-6 space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    Generate STEMsters Email
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-xs text-slate-600 space-y-2.5 leading-relaxed bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-              <p>
-                Generate a personalized outreach email using the STEMsters Knowledge Base for: <strong>{activeContact.firstName} {activeContact.lastName}</strong> at <em>{activeContact.organization}</em>.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                onClick={() => setShowGeminiModal(false)}
-                disabled={isGenerating}
-                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleGenerateWithGemini}
-                disabled={isGenerating}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs disabled:opacity-50"
-              >
-                {isGenerating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{isGenerating ? 'Generating...' : 'Generate Draft'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-800 bg-

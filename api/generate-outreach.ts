@@ -53,11 +53,13 @@ WRITING INSTRUCTIONS:
   } catch (error: any) {
     console.error('Email generation failed:', error);
     
-    // Fallback response so the UI doesn't crash
+    // Fallback response with cleaned notes to prevent double periods and spacing artifacts
     const { contactName, organization, researchNotes } = req.body || {};
+    const cleanedNotes = researchNotes ? researchNotes.trim().replace(/\.$/, '') : '';
+
     return res.status(200).json({
       subject: `STEMsters Hands-On Workshop Collaboration — ${organization || 'Partnership'}`,
-      body: `Dear ${contactName || 'Colleague'},\n\nI hope this message finds you well. I wanted to reach out regarding potential student outreach opportunities with ${organization || 'your institution'}.\n\n${researchNotes ? `I was particularly inspired by your work on ${researchNotes}. ` : ''}Our student alliance at STEMsters coordinates hands-on engineering workshops and kits ($50 per kit/workshop).\n\nWould you be open to a brief 10-minute introductory conversation next term?\n\nBest regards,\nThe STEMsters Team`,
+      body: `Dear ${contactName || 'Colleague'},\n\nI hope this message finds you well. I wanted to reach out regarding potential student outreach opportunities with ${organization || 'your institution'}.\n\n${cleanedNotes ? `I was particularly inspired by your work on ${cleanedNotes}. ` : ''}Our student alliance at STEMsters coordinates hands-on engineering workshops and kits ($50 per kit/workshop).\n\nWould you be open to a brief 10-minute introductory conversation next term?\n\nBest regards,\nThe STEMsters Team`,
     });
   }
 }

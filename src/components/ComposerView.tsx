@@ -144,7 +144,8 @@ export const ComposerView: React.FC = () => {
     setIsGenerating(true);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    // Increased timeout to 30 seconds to prevent premature timeouts during cold starts
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const response = await fetch('/api/generate-outreach', {

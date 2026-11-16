@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-// Tells Vercel to allow up to 30 seconds (requires Pro plan; capped at 10s on Hobby)
+// Tells Vercel to allow up to 30 seconds (requires Pro plan; defaults to 10s on Hobby)
 export const maxDuration = 30;
 
 export default async function handler(req: any, res: any) {
@@ -33,7 +33,6 @@ WRITING INSTRUCTIONS:
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // Single optimized call to prevent cascading timeouts and double latency
     const response = await ai.models.generateContent({
       model: 'gemini-3.8-flash',
       contents: `Write an outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
@@ -52,8 +51,9 @@ WRITING INSTRUCTIONS:
       body: parsed.body,
     });
   } catch (error: any) {
-    console.warn('Using instant fallback draft due to generation error/timeout:', error);
+    console.error('Email generation failed:', error);
     
+    // Fallback response so the UI doesn't crash
     const { contactName, organization, researchNotes } = req.body || {};
     return res.status(200).json({
       subject: `STEMsters Hands-On Workshop Collaboration — ${organization || 'Partnership'}`,

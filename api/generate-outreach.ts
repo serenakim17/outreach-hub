@@ -29,7 +29,7 @@ export default async function handler(req: any, res: any) {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: `Write a personalized STEMsters outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
       config: {
         systemInstruction,

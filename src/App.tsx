@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OutreachProvider, useOutreach } from './context/OutreachContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -8,8 +8,9 @@ import { DashboardView } from './components/DashboardView';
 import { ContactsView } from './components/ContactsView';
 import { ComposerView } from './components/ComposerView';
 import { SettingsView } from './components/SettingsView';
+import { LoginView } from './components/LoginView';
 
-const MainLayout: React.FC = () => {
+const MainLayout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { activePage, addContact } = useOutreach();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false);
@@ -61,6 +62,13 @@ const MainLayout: React.FC = () => {
             <span>Frontend Prototype</span>
             <span aria-hidden="true">·</span>
             <span>Local Storage Active</span>
+            <span aria-hidden="true">·</span>
+            <button 
+              onClick={onLogout}
+              className="text-blue-600 hover:underline font-medium cursor-pointer"
+            >
+              Sign Out
+            </button>
           </div>
         </footer>
       </div>
@@ -79,9 +87,38 @@ const MainLayout: React.FC = () => {
 };
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
+
+  // Check if session exists on load
+  useEffect(() => {
+    const savedSession = localStorage.getItem('stemsters_current_session');
+    if (savedSession) {
+      try {
+        setCurrentUser(JSON.parse(savedSession));
+      } catch (e) {
+        localStorage.removeItem('stemsters_current_session');
+      }
+    }
+  }, []);
+
+  const handleLoginSuccess = (user: { email: string; name: string }) => {
+    setCurrentUser(user);
+    localStorage.setItem('stemsters_current_session', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('stemsters_current_session');
+  };
+
+  // Show Login screen if not authenticated
+  if (!currentUser) {
+    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <OutreachProvider>
-      <MainLayout />
+      <MainLayout onLogout={handleLogout} />
     </OutreachProvider>
   );
 }

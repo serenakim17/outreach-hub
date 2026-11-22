@@ -34,7 +34,7 @@ WRITING INSTRUCTIONS:
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-2.5-flash',
       contents: `Write an outreach email to ${contactName || 'the recipient'} at ${organization || 'their organization'}.`,
       config: {
         systemInstruction,
